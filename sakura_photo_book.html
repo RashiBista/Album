@@ -1,0 +1,566 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=Noto+Serif+JP:wght@400;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #FFF8F0; --orange: #E3BAB6; --purple: #9D4EDD;
+    --text: #E2B4C1; --muted: #6D5730; --border: #E0D5C7;
+    --surface: #FFFFFF; --green: #2D6A4F;
+    --font: 'Space Grotesk', sans-serif;
+  }
+  body { font-family: var(--font); background: var(--cream); color: var(--text); min-height: 100vh; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Sakura petals floating */
+  .petals { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+  .petal { position: absolute; top: -20px; animation: fall linear infinite; opacity: 0.35; }
+  @keyframes fall {
+    0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 0.4; }
+    50% { transform: translateY(50vh) rotate(180deg) translateX(30px); }
+    100% { transform: translateY(105vh) rotate(360deg) translateX(-20px); opacity: 0; }
+  }
+
+  /* Header */
+  .header {
+    background: #1A1A1A; padding: 20px 24px; position: relative; overflow: hidden; z-index: 10;
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; max-width: 900px; margin: 0 auto; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #E85D04, #9D4EDD); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .logo-text { font-weight: 800; font-size: 20px; color: #FFF8F0; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: #A89A8A; letter-spacing: 2px; font-weight: 600; }
+  .nav-tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; }
+  .nav-tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: #A89A8A; font-family: var(--font); transition: all 0.18s; }
+  .nav-tab.active { background: var(--orange); color: #FFF8F0; }
+
+  /* Main content */
+  .main { max-width: 900px; margin: 0 auto; padding: 24px 24px 64px; position: relative; z-index: 1; width: 100%; }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2.5px dashed var(--border); border-radius: 24px; padding: 48px 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface);
+    margin-bottom: 24px; position: relative; overflow: hidden;
+  }
+  .upload-zone:hover { border-color: var(--orange); background: #FFF0E6; }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 48px; margin-bottom: 12px; }
+  .upload-title { font-weight: 800; font-size: 20px; color: var(--text); margin-bottom: 6px; }
+  .upload-hint { font-size: 14px; color: var(--muted); }
+
+  /* Photo grid */
+  .section-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .photo-thumb {
+    aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer;
+    border: 2.5px solid transparent; transition: all 0.18s; position: relative;
+    background: var(--border);
+  }
+  .photo-thumb:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(232,93,4,0.2); }
+  .photo-thumb.selected { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232,93,4,0.2); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: white; display: none; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .photo-thumb.selected .check { display: flex; }
+  .photo-del { position: absolute; top: 6px; left: 6px; width: 22px; height: 22px; border-radius: 50%; background: rgba(208,0,0,0.85); color: white; display: none; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+  .photo-thumb:hover .photo-del { display: flex; }
+
+  /* Editor */
+  .editor-layout { display: grid; grid-template-columns: 1fr 260px; gap: 20px; }
+  .canvas-wrap { background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); padding: 16px; box-shadow: 0 4px 16px rgba(232,93,4,0.08); }
+  .canvas-area { position: relative; border-radius: 10px; overflow: hidden; background: #f0e8de; min-height: 340px; display: flex; align-items: center; justify-content: center; }
+  .canvas-area img { max-width: 100%; max-height: 340px; display: block; border-radius: 8px; }
+  .canvas-placeholder { color: var(--muted); font-size: 14px; text-align: center; padding: 40px; }
+
+  /* Sticker layer */
+  .sticker-on-canvas { position: absolute; cursor: move; font-size: 32px; user-select: none; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.2)); transition: transform 0.1s; }
+  .sticker-on-canvas:hover { transform: scale(1.15); }
+
+  /* Sidebar */
+  .sidebar-card { background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(232,93,4,0.06); }
+  .sidebar-title { font-weight: 800; font-size: 13px; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; }
+
+  /* Filters */
+  .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .filter-btn { border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 4px; text-align: center; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--muted); background: var(--cream); font-family: var(--font); transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--orange); color: var(--orange); background: #FFF0E6; }
+  .filter-preview { width: 100%; aspect-ratio: 1; border-radius: 6px; margin-bottom: 4px; background: linear-gradient(135deg, #ffc3a0, #ffafbd); overflow: hidden; }
+  .filter-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* Stickers */
+  .sticker-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sticker-pick { font-size: 26px; cursor: pointer; padding: 6px; border-radius: 10px; border: 1.5px solid transparent; transition: all 0.15s; background: var(--cream); }
+  .sticker-pick:hover { border-color: var(--purple); background: #F3E8FF; transform: scale(1.2); }
+
+  /* Folder */
+  .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .folder-card {
+    background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border);
+    padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.18s;
+    box-shadow: 0 2px 4px rgba(232,93,4,0.06);
+  }
+  .folder-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(232,93,4,0.15); border-color: var(--orange); }
+  .folder-icon { font-size: 40px; margin-bottom: 8px; }
+  .folder-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+  .folder-count { font-size: 12px; color: var(--muted); }
+  .new-folder { border: 2.5px dashed var(--border); background: transparent; }
+  .new-folder:hover { border-color: var(--orange); background: #FFF0E6; }
+
+  /* Collage */
+  .collage-layouts { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .layout-opt { padding: 8px 16px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 12px; font-weight: 700; cursor: pointer; background: var(--cream); font-family: var(--font); color: var(--muted); transition: all 0.15s; }
+  .layout-opt:hover, .layout-opt.active { border-color: var(--orange); color: var(--orange); background: #FFF0E6; }
+  .collage-grid { display: grid; gap: 6px; border-radius: 16px; overflow: hidden; background: var(--border); min-height: 280px; }
+  .collage-cell { background: #f0e8de; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #C4B5A0; cursor: pointer; min-height: 120px; transition: all 0.15s; overflow: hidden; }
+  .collage-cell:hover { background: #ffe8d6; }
+  .collage-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Buttons */
+  .btn { height: 48px; border-radius: 12px; border: none; font-family: var(--font); font-weight: 700; font-size: 14px; cursor: pointer; padding: 0 24px; display: inline-flex; align-items: center; gap: 8px; transition: transform 0.15s, box-shadow 0.15s; }
+  .btn:hover { transform: scale(1.02); }
+  .btn-primary { background: linear-gradient(135deg, var(--orange), var(--purple)); color: #FFF8F0; box-shadow: 0 4px 12px rgba(232,93,4,0.3); }
+  .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--muted); }
+  .btn-outline:hover { border-color: var(--orange); color: var(--orange); background: #FFF0E6; }
+  .btn-sm { height: 36px; font-size: 13px; padding: 0 16px; border-radius: 9999px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(135deg, var(--orange), var(--purple)); color: #FFF8F0; border-radius: 9999px; padding: 4px 12px; font-size: 12px; font-weight: 700; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1A1A1A; color: #FFF8F0; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 999; transition: transform 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Sakura decorative */
+  .sakura-branch { position: absolute; top: 0; right: 0; opacity: 0.07; pointer-events: none; }
+
+  /* Active filter classes */
+  .f-none { filter: none; }
+  .f-warm { filter: sepia(30%) saturate(130%) brightness(105%); }
+  .f-cool { filter: hue-rotate(15deg) saturate(90%) brightness(105%); }
+  .f-sakura { filter: sepia(20%) hue-rotate(310deg) saturate(140%) brightness(108%); }
+  .f-mono { filter: grayscale(100%) contrast(110%); }
+  .f-vintage { filter: sepia(60%) contrast(110%) brightness(95%); }
+  .f-dreamy { filter: saturate(140%) brightness(108%) blur(0.3px); }
+  .f-golden { filter: sepia(40%) saturate(160%) hue-rotate(-10deg) brightness(110%); }
+  .f-mist { filter: saturate(70%) brightness(112%) contrast(90%); }
+</style>
+
+<div class="app">
+  <div class="petals" id="petals"></div>
+
+  <div class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🌸</div>
+        <div>
+          <div class="logo-text">Sakura Album</div>
+          <div class="logo-sub">PHOTO BOOK</div>
+        </div>
+      </div>
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('gallery')">Gallery</button>
+        <button class="nav-tab" onclick="switchTab('editor')">Edit</button>
+        <button class="nav-tab" onclick="switchTab('collage')">Collage</button>
+        <button class="nav-tab" onclick="switchTab('folders')">Folders</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- GALLERY PANEL -->
+    <div class="panel active" id="panel-gallery">
+      <div class="upload-zone" id="dropzone">
+        <input type="file" accept="image/*" multiple onchange="handleFiles(this.files)" id="fileInput">
+        <div class="upload-icon">🌸</div>
+        <div class="upload-title">Drop your photos here</div>
+        <div class="upload-hint">or click to browse — JPG, PNG, WEBP</div>
+      </div>
+
+      <div id="gallery-section" style="display:none">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div class="section-label">Your Photos <span class="badge" id="photo-count">0</span></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="selectAll()">Select All</button>
+            <button class="btn btn-primary btn-sm" onclick="openEditor()">✦ Edit Selected</button>
+          </div>
+        </div>
+        <div class="photo-grid" id="photo-grid"></div>
+      </div>
+
+      <div id="empty-state" style="text-align:center; padding:40px; color:var(--muted); font-size:14px;">
+        <div style="font-size:48px; margin-bottom:12px;">🌸</div>
+        <div style="font-weight:700; font-size:16px; margin-bottom:6px; color:var(--text);">Your album is empty</div>
+        <div>Upload photos to start your sakura story</div>
+      </div>
+    </div>
+
+    <!-- EDITOR PANEL -->
+    <div class="panel" id="panel-editor">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div>
+          <div style="font-weight:800; font-size:24px; letter-spacing:-0.5px;">Photo Editor</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;">Filters, stickers & magic ✨</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="switchTab('gallery')">← Back</button>
+      </div>
+
+      <div class="editor-layout" id="editor-layout">
+        <div class="canvas-wrap">
+          <div class="canvas-area" id="canvas-area">
+            <div class="canvas-placeholder" id="canvas-placeholder">
+              <div style="font-size:40px; margin-bottom:12px;">🌸</div>
+              <div>Select a photo from Gallery to edit</div>
+            </div>
+            <img id="editor-img" style="display:none;" alt="editing">
+            <div id="sticker-layer" style="position:absolute; inset:0; pointer-events:none;"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="savePhoto()">⬇ Save Photo</button>
+            <button class="btn btn-outline" onclick="clearStickers()">Clear Stickers</button>
+            <button class="btn btn-outline" onclick="resetFilter()">Reset Filter</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="sidebar-card">
+            <div class="sidebar-title">🎨 Filters</div>
+            <div class="filter-grid" id="filter-grid"></div>
+          </div>
+          <div class="sidebar-card">
+            <div class="sidebar-title">🌸 Stickers</div>
+            <div class="sticker-grid" id="sticker-grid"></div>
+          </div>
+          <div class="sidebar-card">
+            <div class="sidebar-title">💾 Save To</div>
+            <div id="folder-select-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLLAGE PANEL -->
+    <div class="panel" id="panel-collage">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div>
+          <div style="font-weight:800; font-size:24px; letter-spacing:-0.5px;">Make a Collage</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;">Arrange photos into beautiful layouts</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-bottom:10px;">Layout</div>
+      <div class="collage-layouts">
+        <button class="layout-opt active" onclick="setCollageLayout(2,'1fr 1fr',this)">2 Photos</button>
+        <button class="layout-opt" onclick="setCollageLayout(3,'1fr 1fr 1fr',this)">3 Photos</button>
+        <button class="layout-opt" onclick="setCollageLayout(4,'1fr 1fr',this)">4 Grid</button>
+        <button class="layout-opt" onclick="setCollageLayout(1,'1fr',this)">Full Single</button>
+      </div>
+
+      <div class="canvas-wrap" style="margin-bottom:20px;">
+        <div class="collage-grid" id="collage-grid" style="grid-template-columns: 1fr 1fr;"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveCollage()">⬇ Save Collage</button>
+        <button class="btn btn-outline" onclick="clearCollage()">Clear</button>
+      </div>
+    </div>
+
+    <!-- FOLDERS PANEL -->
+    <div class="panel" id="panel-folders">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div>
+          <div style="font-weight:800; font-size:24px; letter-spacing:-0.5px;">My Folders</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;">Organise your memories 🌸</div>
+        </div>
+      </div>
+      <div class="folder-grid" id="folder-grid"></div>
+
+      <!-- Create folder -->
+      <div class="sidebar-card" style="max-width:400px;">
+        <div class="sidebar-title">Create New Folder</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="folder-name-input" placeholder="Folder name..." style="flex:1; height:48px; border:2px solid var(--border); border-radius:12px; padding:0 16px; font-family:var(--font); font-size:15px; background:var(--cream); color:var(--text); outline:none;" onfocus="this.style.borderColor='#E85D04'" onblur="this.style.borderColor='#E0D5C7'">
+          <div id="folder-emoji-pick" style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span class="sticker-pick" onclick="selectFolderEmoji(this)">🌸</span>
+            <span class="sticker-pick" onclick="selectFolderEmoji(this)">🎋</span>
+            <span class="sticker-pick" onclick="selectFolderEmoji(this)">🏮</span>
+            <span class="sticker-pick" onclick="selectFolderEmoji(this)">🦋</span>
+          </div>
+          <button class="btn btn-primary" onclick="createFolder()" style="flex-shrink:0;">Create</button>
+        </div>
+      </div>
+
+      <!-- Folder photos view -->
+      <div id="folder-photos-section" style="display:none; margin-top:24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-weight:800; font-size:18px;" id="folder-photos-title">Folder</div>
+          <button class="btn btn-outline btn-sm" onclick="closeFolderView()">← Back</button>
+        </div>
+        <div class="photo-grid" id="folder-photos-grid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FILTERS = [
+  { name: 'Original', cls: 'f-none' }, { name: 'Warm', cls: 'f-warm' },
+  { name: 'Cool', cls: 'f-cool' }, { name: 'Sakura', cls: 'f-sakura' },
+  { name: 'Mono', cls: 'f-mono' }, { name: 'Vintage', cls: 'f-vintage' },
+  { name: 'Dreamy', cls: 'f-dreamy' }, { name: 'Golden', cls: 'f-golden' },
+  { name: 'Mist', cls: 'f-mist' },
+];
+const STICKERS = ['🌸','🌺','🌻','🦋','⭐','🌙','🎋','🏮','🍡','🫧','🌿','🎐','🌷','🦚','✨','🎴','🪷','🎑'];
+
+let photos = [], selected = [], activeFilter = 'f-none', stickersOnCanvas = [], folders = [
+  { id: 1, name: 'Sakura Season', emoji: '🌸', photos: [] },
+  { id: 2, name: 'Adventures', emoji: '🎋', photos: [] },
+];
+let collageCells = [], collageCount = 2, selectedFolderEmoji = '🌸', activeFolderView = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const tabs = { gallery: 0, editor: 1, collage: 2, folders: 3 };
+  document.querySelectorAll('.nav-tab')[tabs[name]]?.classList.add('active');
+  if (name === 'folders') renderFolders();
+  if (name === 'collage') renderCollage();
+  if (name === 'editor') renderFilterGrid();
+}
+
+function handleFiles(files) {
+  [...files].forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      photos.push({ id: Date.now() + Math.random(), src: e.target.result, filter: 'f-none', name: file.name });
+      renderGallery();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderGallery() {
+  const grid = document.getElementById('photo-grid');
+  const sec = document.getElementById('gallery-section');
+  const empty = document.getElementById('empty-state');
+  if (photos.length === 0) { sec.style.display = 'none'; empty.style.display = 'block'; return; }
+  sec.style.display = 'block'; empty.style.display = 'none';
+  document.getElementById('photo-count').textContent = photos.length;
+  grid.innerHTML = photos.map((p, i) => `
+    <div class="photo-thumb ${selected.includes(p.id) ? 'selected' : ''}" onclick="toggleSelect(${i})">
+      <img src="${p.src}" alt="" class="${p.filter}">
+      <div class="check">✓</div>
+      <div class="photo-del" onclick="event.stopPropagation(); deletePhoto(${i})">×</div>
+    </div>`).join('');
+}
+
+function toggleSelect(i) {
+  const id = photos[i].id;
+  if (selected.includes(id)) selected = selected.filter(s => s !== id);
+  else selected.push(id);
+  renderGallery();
+}
+function selectAll() { selected = photos.map(p => p.id); renderGallery(); }
+function deletePhoto(i) { photos.splice(i, 1); renderGallery(); }
+
+function openEditor() {
+  switchTab('editor');
+  const p = selected.length ? photos.find(ph => ph.id === selected[0]) : photos[0];
+  if (p) loadPhotoInEditor(p);
+}
+
+function loadPhotoInEditor(p) {
+  const img = document.getElementById('editor-img');
+  const ph = document.getElementById('canvas-placeholder');
+  img.src = p.src; img.style.display = 'block'; ph.style.display = 'none';
+  img.className = p.filter; activeFilter = p.filter;
+  stickersOnCanvas = []; document.getElementById('sticker-layer').innerHTML = '';
+  renderFilterGrid();
+  renderFolderSelectList();
+}
+
+function renderFilterGrid() {
+  const grid = document.getElementById('filter-grid');
+  const img = document.getElementById('editor-img');
+  grid.innerHTML = FILTERS.map(f => `
+    <div class="filter-btn ${activeFilter === f.cls ? 'active' : ''}" onclick="applyFilter('${f.cls}')">
+      <div class="filter-preview"><img src="${img.src || ''}" style="filter:${getFilterStyle(f.cls)}" onerror="this.style.display='none'"></div>
+      ${f.name}
+    </div>`).join('');
+}
+
+function getFilterStyle(cls) {
+  const map = { 'f-none':'none','f-warm':'sepia(30%) saturate(130%) brightness(105%)','f-cool':'hue-rotate(15deg) saturate(90%) brightness(105%)','f-sakura':'sepia(20%) hue-rotate(310deg) saturate(140%) brightness(108%)','f-mono':'grayscale(100%) contrast(110%)','f-vintage':'sepia(60%) contrast(110%) brightness(95%)','f-dreamy':'saturate(140%) brightness(108%)','f-golden':'sepia(40%) saturate(160%) hue-rotate(-10deg) brightness(110%)','f-mist':'saturate(70%) brightness(112%) contrast(90%)' };
+  return map[cls] || 'none';
+}
+
+function applyFilter(cls) {
+  activeFilter = cls;
+  const img = document.getElementById('editor-img');
+  FILTERS.forEach(f => img.classList.remove(f.cls));
+  img.classList.add(cls);
+  renderFilterGrid();
+}
+
+function resetFilter() { applyFilter('f-none'); }
+
+function clearStickers() { stickersOnCanvas = []; document.getElementById('sticker-layer').innerHTML = ''; }
+
+function renderStickerGrid() {
+  const grid = document.getElementById('sticker-grid');
+  if (grid) grid.innerHTML = STICKERS.map(s => `<span class="sticker-pick" onclick="addSticker('${s}')">${s}</span>`).join('');
+}
+
+function addSticker(emoji) {
+  const layer = document.getElementById('sticker-layer');
+  layer.style.pointerEvents = 'auto';
+  const el = document.createElement('div');
+  el.className = 'sticker-on-canvas'; el.textContent = emoji;
+  el.style.left = (30 + Math.random() * 50) + '%';
+  el.style.top = (20 + Math.random() * 50) + '%';
+  makeDraggable(el);
+  layer.appendChild(el);
+  showToast('Sticker added! Drag to reposition 🌸');
+}
+
+function makeDraggable(el) {
+  let dx, dy, dragging = false;
+  el.addEventListener('mousedown', e => { dragging = true; dx = e.clientX - el.getBoundingClientRect().left; dy = e.clientY - el.getBoundingClientRect().top; e.preventDefault(); });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const parent = el.parentElement.getBoundingClientRect();
+    el.style.left = ((e.clientX - parent.left - dx) / parent.width * 100) + '%';
+    el.style.top = ((e.clientY - parent.top - dy) / parent.height * 100) + '%';
+  });
+  document.addEventListener('mouseup', () => dragging = false);
+}
+
+function savePhoto() {
+  showToast('📸 Photo saved to your device! (Demo)');
+}
+
+function renderFolderSelectList() {
+  const el = document.getElementById('folder-select-list');
+  if (!el) return;
+  el.innerHTML = folders.map(f => `
+    <button class="btn btn-outline" style="height:36px; font-size:13px; justify-content:flex-start; gap:8px;" onclick="saveToFolder(${f.id})">
+      ${f.emoji} Save to ${f.name}
+    </button>`).join('');
+}
+
+function saveToFolder(folderId) {
+  const f = folders.find(fl => fl.id === folderId);
+  const img = document.getElementById('editor-img');
+  if (img.src && f) {
+    const exists = f.photos.find(p => p.src === img.src);
+    if (!exists) f.photos.push({ id: Date.now(), src: img.src, filter: activeFilter });
+    showToast(`Saved to ${f.emoji} ${f.name}!`);
+  }
+}
+
+function renderCollage() {
+  const grid = document.getElementById('collage-grid');
+  const cells = Array(collageCount).fill(null).map((_, i) => collageCells[i] || null);
+  grid.innerHTML = cells.map((c, i) => `
+    <div class="collage-cell" onclick="addToCollage(${i})">
+      ${c ? `<img src="${c.src}" class="${c.filter}" alt="">` : `<span style="font-size:32px; color:#C4B5A0">+</span>`}
+    </div>`).join('');
+}
+
+function addToCollage(idx) {
+  const avail = photos.filter((_, i) => !collageCells.includes(photos[i]));
+  if (avail.length === 0) { showToast('No more photos to add! Upload more 🌸'); return; }
+  collageCells[idx] = avail[0];
+  renderCollage();
+}
+
+function setCollageLayout(count, cols, btn) {
+  collageCount = count; collageCells = [];
+  document.querySelectorAll('.layout-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('collage-grid').style.gridTemplateColumns = cols;
+  renderCollage();
+}
+
+function clearCollage() { collageCells = []; renderCollage(); }
+function saveCollage() { showToast('🎴 Collage saved! (Demo)'); }
+
+function renderFolders() {
+  const el = document.getElementById('folder-photos-section');
+  el.style.display = 'none';
+  const grid = document.getElementById('folder-grid');
+  grid.innerHTML = folders.map(f => `
+    <div class="folder-card" onclick="openFolder(${f.id})">
+      <div class="folder-icon">${f.emoji}</div>
+      <div class="folder-name">${f.name}</div>
+      <div class="folder-count">${f.photos.length} photos</div>
+    </div>`).join(`
+    <div class="folder-card new-folder" onclick="document.getElementById('folder-name-input').focus()">
+      <div class="folder-icon">+</div>
+      <div class="folder-name" style="color:var(--muted)">New Folder</div>
+    </div>`);
+}
+
+function openFolder(id) {
+  const f = folders.find(fl => fl.id === id);
+  activeFolderView = id;
+  document.getElementById('folder-grid').style.display = 'none';
+  const sec = document.getElementById('folder-photos-section');
+  sec.style.display = 'block';
+  document.getElementById('folder-photos-title').textContent = `${f.emoji} ${f.name}`;
+  const g = document.getElementById('folder-photos-grid');
+  if (f.photos.length === 0) { g.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--muted); font-size:14px;">No photos yet — save some from the editor 🌸</div>`; return; }
+  g.innerHTML = f.photos.map(p => `<div class="photo-thumb"><img src="${p.src}" class="${p.filter}" alt=""></div>`).join('');
+}
+
+function closeFolderView() {
+  document.getElementById('folder-grid').style.display = 'grid';
+  document.getElementById('folder-photos-section').style.display = 'none';
+}
+
+function selectFolderEmoji(el) {
+  document.querySelectorAll('#folder-emoji-pick .sticker-pick').forEach(s => s.style.background = '');
+  el.style.background = '#F3E8FF'; selectedFolderEmoji = el.textContent;
+}
+
+function createFolder() {
+  const inp = document.getElementById('folder-name-input');
+  if (!inp.value.trim()) { showToast('Enter a folder name!'); return; }
+  folders.push({ id: Date.now(), name: inp.value.trim(), emoji: selectedFolderEmoji, photos: [] });
+  inp.value = ''; renderFolders(); renderFolderSelectList();
+  showToast(`${selectedFolderEmoji} Folder created!`);
+}
+
+function spawnPetals() {
+  const container = document.getElementById('petals');
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (6 + Math.random() * 10) + 's';
+    p.style.animationDelay = (Math.random() * 12) + 's';
+    p.innerHTML = `<svg width="14" height="14" viewBox="0 0 20 20"><ellipse cx="10" cy="10" rx="6" ry="10" fill="#E85D04" transform="rotate(${Math.random()*360} 10 10)" opacity="0.7"/></svg>`;
+    container.appendChild(p);
+  }
+}
+
+renderStickerGrid();
+spawnPetals();
+renderCollage();
+renderFolders();
+renderGallery();
+</script>

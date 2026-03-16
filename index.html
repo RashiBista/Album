@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sakura Album — Photo Book</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="petals" id="petals"></div>
+
+<!-- ─── Header ──────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🌸</div>
+      <div>
+        <div class="logo-text">Sakura Album</div>
+        <div class="logo-sub">PHOTO BOOK</div>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('gallery')">Gallery</button>
+      <button class="nav-tab"        onclick="switchTab('editor')">Edit</button>
+      <button class="nav-tab"        onclick="switchTab('collage')">Collage</button>
+      <button class="nav-tab"        onclick="switchTab('folders')">Folders</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ─── Main ────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- ── GALLERY ── -->
+  <div class="panel active" id="panel-gallery">
+
+    <div class="upload-zone" id="dropzone">
+      <input type="file" accept="image/*" multiple
+             onchange="handleFiles(this.files)" id="fileInput">
+      <div class="upload-icon">🌸</div>
+      <div class="upload-title">Drop your photos here</div>
+      <div class="upload-hint">or click to browse — JPG, PNG, WEBP</div>
+    </div>
+
+    <div id="gallery-section" style="display:none">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div class="section-label">
+          Your Photos&nbsp;
+          <span class="badge" id="photo-count">0</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="selectAll()">Select All</button>
+          <button class="btn btn-primary btn-sm" onclick="openEditor()">✦ Edit Selected</button>
+        </div>
+      </div>
+      <div class="photo-grid" id="photo-grid"></div>
+    </div>
+
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">🌸</div>
+      <div class="empty-title">Your album is empty</div>
+      <div>Upload photos to start your sakura story</div>
+    </div>
+
+  </div><!-- /panel-gallery -->
+
+
+  <!-- ── EDITOR ── -->
+  <div class="panel" id="panel-editor">
+
+    <div class="page-header">
+      <div class="page-header-row">
+        <div>
+          <div class="page-title">Photo Editor</div>
+          <div class="page-sub">Filters, stickers &amp; magic ✨</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="switchTab('gallery')">← Back</button>
+      </div>
+    </div>
+
+    <div class="editor-layout">
+
+      <!-- Canvas -->
+      <div class="canvas-wrap">
+        <div class="canvas-area" id="canvas-area">
+          <div class="canvas-placeholder" id="canvas-placeholder">
+            <div style="font-size:44px; margin-bottom:14px;">🌸</div>
+            <div>Select a photo from Gallery to edit</div>
+          </div>
+          <img id="editor-img" style="display:none;" alt="editing photo">
+          <div id="sticker-layer" style="position:absolute; inset:0; pointer-events:none;"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary"  onclick="savePhoto()">⬇ Save Photo</button>
+          <button class="btn btn-outline"  onclick="clearStickers()">Clear Stickers</button>
+          <button class="btn btn-outline"  onclick="resetFilter()">Reset Filter</button>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div>
+        <div class="sidebar-card">
+          <div class="sidebar-title">🎨 Filters</div>
+          <div class="filter-grid" id="filter-grid"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-title">🌸 Stickers</div>
+          <div class="sticker-grid" id="sticker-grid"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-title">💾 Save To Folder</div>
+          <div id="folder-select-list" style="display:flex; flex-direction:column; gap:7px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /panel-editor -->
+
+
+  <!-- ── COLLAGE ── -->
+  <div class="panel" id="panel-collage">
+
+    <div class="page-header">
+      <div class="page-title">Make a Collage</div>
+      <div class="page-sub">Arrange photos into beautiful layouts 🌸</div>
+    </div>
+
+    <div class="section-label">Layout</div>
+    <div class="collage-layouts">
+      <button class="layout-opt active"
+              onclick="setCollageLayout(2,'1fr 1fr',this)">2 Photos</button>
+      <button class="layout-opt"
+              onclick="setCollageLayout(3,'1fr 1fr 1fr',this)">3 Photos</button>
+      <button class="layout-opt"
+              onclick="setCollageLayout(4,'1fr 1fr',this)">4 Grid</button>
+      <button class="layout-opt"
+              onclick="setCollageLayout(1,'1fr',this)">Full Single</button>
+    </div>
+
+    <div class="canvas-wrap" style="margin-bottom:20px;">
+      <div class="collage-grid" id="collage-grid"
+           style="grid-template-columns: 1fr 1fr;"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveCollage()">⬇ Save Collage</button>
+      <button class="btn btn-outline"  onclick="clearCollage()">Clear All</button>
+    </div>
+
+  </div><!-- /panel-collage -->
+
+
+  <!-- ── FOLDERS ── -->
+  <div class="panel" id="panel-folders">
+
+    <div class="page-header">
+      <div class="page-title">My Folders</div>
+      <div class="page-sub">Organise your memories 🌸</div>
+    </div>
+
+    <div class="folder-grid" id="folder-grid"></div>
+
+    <!-- Create folder form -->
+    <div class="sidebar-card" style="max-width:480px;">
+      <div class="sidebar-title">Create New Folder</div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="folder-name-input" class="text-input"
+               placeholder="Folder name…"
+               style="flex:1; min-width:140px;"
+               onkeydown="if(event.key==='Enter') createFolder()">
+        <div id="folder-emoji-pick" style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)"
+                style="background:var(--sakura-50); border-color:var(--blossom);">🌸</span>
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)">🎋</span>
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)">🏮</span>
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)">🦋</span>
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)">🌷</span>
+          <span class="sticker-pick" onclick="selectFolderEmoji(this)">🍃</span>
+        </div>
+        <button class="btn btn-primary" onclick="createFolder()">Create</button>
+      </div>
+    </div>
+
+    <!-- Folder photos view -->
+    <div id="folder-photos-section" style="display:none; margin-top:28px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="page-title" id="folder-photos-title">Folder</div>
+        <button class="btn btn-outline btn-sm" onclick="closeFolderView()">← Back</button>
+      </div>
+      <div class="photo-grid" id="folder-photos-grid"></div>
+    </div>
+
+  </div><!-- /panel-folders -->
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
